@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 const express = require('express')
 const jwtDecode = require('jwt-decode')
 const jsonwebtoken = require('jsonwebtoken');
@@ -7,6 +9,7 @@ const cors = require('cors')
 const mongoose = require('mongoose')
 const jwt = require('express-jwt');
 const axios = require('axios');
+const path = require("path");
 
 const app = express()
 const port = 3000
@@ -16,9 +19,16 @@ const SECRET = 'changeme';
 const User = require('./model/User');
 const Token = require('./model/Token');
 
+const giftIdeas = require('./api/GiftIdeas');
+const animalName = require('./api/AnimalName');
+const chat = require('./api/Chat');
+
 app.use(cors())
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+// Pick up React index.html file
+app.use(express.static(path.join(__dirname, "/static/js")));
+
 
 const generateToken = user => {
  
@@ -177,11 +187,18 @@ const requireAuth = jwt({
 
 
 app.get('/api/cat',requireAuth, async (req, res) => {
-   const response = await axios.get('https://cataas.com/cat', { responseType:"arraybuffer" })
+   // const response = await axios.get('https://cataas.com/cat', { responseType:"arraybuffer" })
+   //const response = await axios.get('https://purr.objects-us-east-1.dream.io/i/QWdkq.gif', { responseType:"arraybuffer" })
+   const r = await axios.get('https://aws.random.cat/meow')
+   const response = await axios.get(r.data.file, { responseType:"arraybuffer" })   
    let raw = Buffer.from(response.data).toString('base64');
    res.send("data:" + response.headers["content-type"] + ";base64,"+raw);
 
 })
+
+app.post('/api/generate-gifts', requireAuth, async (req, res) => {await giftIdeas(req, res)})
+app.post('/api/animal-name', requireAuth, async (req, res) => {await animalName(req, res)})
+app.post('/api/chat', requireAuth, async (req, res) => {await chat(req, res)})
 
 async function connect() {
   try {    
